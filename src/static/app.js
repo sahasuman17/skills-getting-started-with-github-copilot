@@ -4,14 +4,25 @@ document.addEventListener("DOMContentLoaded", () => {
   const signupForm = document.getElementById("signup-form");
   const messageDiv = document.getElementById("message");
 
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;")
+      .replace(/'/g, "&#039;");
+  }
+
   // Function to fetch activities from API
   async function fetchActivities() {
     try {
       const response = await fetch("/activities");
       const activities = await response.json();
 
-      // Clear loading message
+      // Clear loading message and previous UI state
       activitiesList.innerHTML = "";
+      // Reset select options (keep placeholder)
+      activitySelect.innerHTML = '<option value="">-- Select an activity --</option>';
 
       // Populate activities list
       Object.entries(activities).forEach(([name, details]) => {
@@ -20,11 +31,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const spotsLeft = details.max_participants - details.participants.length;
 
+        // build participants HTML (bulleted list or placeholder)
+        const participantsHtml = details.participants && details.participants.length
+          ? `<ul class="participants">${details.participants.map(p => `<li title="${escapeHtml(p)}">${escapeHtml(p)}</li>`).join("")}</ul>`
+          : `<p class="no-participants">No participants yet — be the first!</p>`;
+
         activityCard.innerHTML = `
-          <h4>${name}</h4>
-          <p>${details.description}</p>
-          <p><strong>Schedule:</strong> ${details.schedule}</p>
-          <p><strong>Availability:</strong> ${spotsLeft} spots left</p>
+          <div class="activity-card-header">
+            <h4 class="activity-title">${escapeHtml(name)}</h4>
+            <p class="activity-availability">${spotsLeft} spots left</p>
+          </div>
+
+          <p class="activity-desc">${escapeHtml(details.description)}</p>
+          <p class="activity-schedule"><strong>Schedule:</strong> ${escapeHtml(details.schedule)}</p>
+
+          <div class="activity-participants">
+            <h5>Participants</h5>
+            ${participantsHtml}
+          </div>
         `;
 
         activitiesList.appendChild(activityCard);
